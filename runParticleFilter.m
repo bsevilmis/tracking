@@ -3,7 +3,7 @@
 % Author: Berk Sevilmis, Feb 21, 2015
 % state = [x y velocityX velocityY width height scale]
 
-function bestProposalIndices = runParticleFilter(firstFrameGTImage, framesPath, proposalsPath, resultsPath)
+function bestProposalIndices = runParticleFilter(firstFrameGTImage, framesPath, proposalsPath, resultsPath, groundTruthPath)
 
 %VLFeat setup
 run('~/Desktop/Research/vlfeat-0.9.19/toolbox/vl_setup');
@@ -81,6 +81,7 @@ load('./Results/SegTrackv2/HoiemResults/girlv3/currentWorkspacev2.mat')
 nbOfSuperPixels = 750;
 spFeatures = [];
 spImages = cell(1,numberOfFrames);
+spLabels = cell(1,numberOfFrames);
 for frameNumber = 2:numberOfFrames
     % obtain observation
     observedImage = imread([framesPath '/' framesFolder(2+frameNumber).name]);
@@ -88,12 +89,24 @@ for frameNumber = 2:numberOfFrames
     locationPrior = locationPriorsCell{frameNumber};
     foregroundProbability = foregroundProbabilityCell{frameNumber};
     % extract features
-    [spImages{1,frameNumber},spFeatures] = extractSuperPixelFeatures(frameNumber, observedImage, spFeatures, nbOfSuperPixels, locationPrior, binsPerEachColor,foregroundProbability);
+    [spImages{1,frameNumber},spFeatures, spLabels{1,frameNumber}] = extractSuperPixelFeatures(frameNumber, observedImage, spFeatures, nbOfSuperPixels, locationPrior, binsPerEachColor,foregroundProbability);
 end
 
 
 % obtain random walk matrix
 randomWalkMatrix = obtainRandomWalkMatrix(spFeatures, binsPerEachColor);
+
+% % propagate labels
+% nbOfNeighbors = frameNumber - 1;
+% propagatedProbabilities = propagateLabels(spImages, nbOfNeighbors, randomWalkMatrix, spFeatures, numberOfFrames);
+
+% propagate labels version 2
+nbOfNeighbors = (frameNumber - 1);
+propagatedProbabilities = propagateLabelsv2(spImages, nbOfNeighbors, randomWalkMatrix, spFeatures, numberOfFrames);
+
+
+% find ROC curve
+obtainROCCurve(propagatedProbabilities, spFeatures,spLabels,groundTruthPath, numberOfFrames);
 
 
 end

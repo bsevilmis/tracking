@@ -1,9 +1,9 @@
-function [spSegmentation, spFeatures] = extractSuperPixelFeatures(frameNumber, observedImage, spFeatures, nbOfSuperPixels, locationPrior, binsPerEachColor,foregroundProbability)
+function [spSegmentation, spFeatures, spLabels] = extractSuperPixelFeatures(frameNumber, observedImage, spFeatures, nbOfSuperPixels, locationPrior, binsPerEachColor,foregroundProbability)
 
 observedImageLab = vl_xyz2lab(vl_rgb2xyz(observedImage));
 superpixelSegments = vl_slic(single(observedImageLab),sqrt((size(observedImageLab,1)*size(observedImageLab,2))/nbOfSuperPixels),1000);
 superpixelSegments = superpixelSegments + 1; %make sure indexing starts from 1
-
+spLabels = superpixelSegments;
 
 
 
@@ -97,6 +97,8 @@ end
 for i = 1:length(superpixelSegmentsIndicesVector)
     [rowIndices,colIndices] = find(superpixelSegments == superpixelSegmentsIndicesVector(i));
     pixelIndices = sub2ind([size(observedImage,1),size(observedImage,2)],rowIndices,colIndices);
+    meanRGB = calculateMeanColorVector(pixelIndices,observedImage);
+    meanLAB = calculateMeanColorVector(pixelIndices,imageLAB8Bit);
     superpixelHistogramRGB = calculateHistogramFromVectors(pixelIndices,binsPerEachColor,observedImage);
     superpixelHistogramLAB = calculateHistogramFromVectors(pixelIndices,binsPerEachColor,imageLAB8Bit);
     [meanX,meanY] = getSuperpixelCenter(rowIndices,colIndices);
@@ -109,6 +111,8 @@ for i = 1:length(superpixelSegmentsIndicesVector)
     sp.relativeCoordinates = [ (meanX - topLeftX) / (bottomRightX - topLeftX) (meanY - topLeftY) / (bottomRightY - topLeftY)];
     sp.fgProbability = meanForegroundProbability;
     sp.meanCoordinates = [meanY meanX];
+    sp.meanRGB = meanRGB;
+    sp.meanLAB = meanLAB;
     spFeatures = [spFeatures;sp];
 end
 end
@@ -120,4 +124,11 @@ end
 
 function meanForegroundProbability = getMeanForegroundProbability(pixelIndices, foregroundProbability)
     meanForegroundProbability = mean(foregroundProbability(pixelIndices));
+end
+
+function meanColorVector = calculateMeanColorVector(pixelIndices,image)
+    separatedFirstChannel = image(:,:,1);
+    separatedSecondChannel = image(:,:,2);
+    separatedThirdChannel = image(:,:,3);
+    meanColorVector = [mean(separatedFirstChannel(pixelIndices)) mean(separatedSecondChannel(pixelIndices)) mean(separatedThirdChannel(pixelIndices))];
 end
