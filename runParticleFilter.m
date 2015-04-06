@@ -106,7 +106,7 @@ propagatedProbabilities = propagateLabelsv2(spImages, nbOfNeighbors, randomWalkM
 
 
 % find ROC curve
-obtainROCCurve(propagatedProbabilities, spFeatures,spLabels,groundTruthPath, numberOfFrames);
+obtainROCCurve(propagatedProbabilities, spFeatures,spLabels,groundTruthPath, numberOfFrames, resultsPath, framesPath);
 
 
 end
